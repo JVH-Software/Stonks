@@ -1,7 +1,7 @@
 import collections
 import json
 import os
-from datetime import date
+from datetime import date, timedelta
 from typing import Union
 
 from plugin import Plugin
@@ -87,10 +87,27 @@ class Stonks:
             elif not os.path.exists(os.path.dirname(file_path)):
                 os.makedirs(os.path.dirname(file_path))
 
+        # Determine if cache is missing any keys
+        if stock_data == {}:
+            missing_keys = keys.copy()
+        else:
+            missing_keys = []
+            for key in keys:
+                idx = start_date
+                while idx <= end_date:
+                    idx += timedelta(days=1)
+                    if idx in stock_data:
+                        if key not in stock_data[idx]:
+                            missing_keys.append(key)
+                            break
+                    else:
+                        missing_keys.append(key)
+                        break
+
         # Run get method on each plugin
         for plugin in self.plugins:
             try:
-                update_dict(stock_data, plugin.get(keys, start_date, end_date, exchange, symbol, extension))
+                update_dict(stock_data, plugin.get(missing_keys, start_date, end_date, exchange, symbol, extension))
             except Exception as e:
                 print(e)
 
