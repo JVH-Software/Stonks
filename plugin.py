@@ -22,7 +22,8 @@ class Plugin(ABC):
             extension: str = None) -> dict:
         """
         Args:
-            keys: The kind of data requested. Plugin should ignore any unexpected keys. Ex: ["close", "open", "volume"]
+            keys: The kind of data requested. Plugin should ignore any unexpected keys. If empty, plugin should assume
+            all keys are valid. Ex: ["close", "open", "volume"]
             start_date: The starting date of the requested data. Inclusive. start_date <= end_date
             end_date: The ending date of the requested data. Inclusive. end_date => start_date
             exchange: The stock exchange symbol. Ex: "NYSE" from "NYSE:BRK.A".

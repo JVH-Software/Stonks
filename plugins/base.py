@@ -30,7 +30,7 @@ class YahooFinancePlugin(Plugin):
             extension: str = None) -> dict:
 
         # Return nothing if no specified keys apply to this plugin
-        if not self.available_keys.intersection(set(keys)):
+        if len(keys) > 0 and not self.available_keys.intersection(set(keys)):
             return {}
 
         # Get data from Yahoo Finance through yfinance
@@ -44,8 +44,9 @@ class YahooFinancePlugin(Plugin):
         dataframe.index = idx_list
 
         # Drop any columns that were not specified in the request
-        drop_labels = (set(keys) ^ self.available_keys) & self.available_keys
-        dataframe = dataframe.drop(columns=drop_labels)
+        if len(keys) > 0:
+            drop_labels = (set(keys) ^ self.available_keys) & self.available_keys
+            dataframe = dataframe.drop(columns=drop_labels)
 
         # Convert to expected dictionary format
         return dataframe.T.to_dict()

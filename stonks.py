@@ -1,4 +1,5 @@
 import collections
+import json
 import os
 from datetime import date
 from typing import Union
@@ -44,11 +45,6 @@ class Stonks:
     def __init__(self, cache_path: str = None, specified_plugins: list = [], whitelist: bool = False):
         self.cache_path = cache_path
 
-        # Create cache
-        if self.cache_path:
-            os.mkdir(self.cache_path)
-            raise NotImplementedError
-
         # Load plugins
         self.plugins = []
         for plugin in Plugin.__subclasses__():
@@ -72,15 +68,42 @@ class Stonks:
         Returns:
             A nested dictionary containing the requested data in the form {"YYYY-MM-DD": {"KEY": "VALUE"}}.
         """
+        stock_data = {}
+
         # Convert the optional string type into a single item list
         if type(keys) == str:
             keys = [keys]
 
+        # Load cache or create path it if it doesn't exist
+        file_path = None
+        if self.cache_path:
+            if extension:
+                file_path = os.path.join(self.cache_path, exchange, symbol + "." + extension)
+            else:
+                file_path = os.path.join(self.cache_path, exchange, symbol)
+            if os.path.exists(file_path):
+                with open(file_path) as json_file:
+                    stock_data = json.load(json_file)
+            elif not os.path.exists(os.path.dirname(file_path)):
+                os.makedirs(os.path.dirname(file_path))
+
         # Run get method on each plugin
-        stock_data = {}
         for plugin in self.plugins:
             try:
                 update_dict(stock_data, plugin.get(keys, start_date, end_date, exchange, symbol, extension))
             except Exception as e:
                 print(e)
+
+        # Store data in cache
+        if file_path:
+            with open(file_path, 'w+') as json_file:
+                json.dump(stock_data, json_file, indent=4, sort_keys=True)
+
+        # Drop any cached keys that weren't requested
+        if len(keys) > 0:
+            for idx in stock_data:
+                drop_keys = set(keys) - set(stock_data[idx])
+                for drop_key in drop_keys:
+                    del stock_data[idx][drop_key]
+
         return stock_data
