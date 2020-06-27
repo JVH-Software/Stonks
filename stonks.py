@@ -2,7 +2,9 @@ import collections
 import json
 import os
 from datetime import date, timedelta
-from typing import Union
+from typing import Union, Optional
+
+from pandas import read_pickle, DataFrame
 
 from plugin import Plugin
 from plugins import *  # This is required to load all plugins dynamically
@@ -56,7 +58,7 @@ class Stonks:
         self.plugins.sort()
 
     def get(self, keys: Union[list, str], start_date: date, end_date: date, exchange: str, symbol: str,
-            extension: str = None) -> dict:
+            extension: str = None) -> Optional[DataFrame]:
         """
         Args:
             keys: The kind of data requested. Ex: ["close", "open", "volume"]
@@ -68,7 +70,7 @@ class Stonks:
         Returns:
             A nested dictionary containing the requested data in the form {"YYYY-MM-DD": {"KEY": "VALUE"}}.
         """
-        stock_data = {}
+        stock_data = DataFrame()
 
         # Convert the optional string type into a single item list
         if type(keys) == str:
@@ -82,45 +84,39 @@ class Stonks:
             else:
                 file_path = os.path.join(self.cache_path, exchange, symbol)
             if os.path.exists(file_path):
-                with open(file_path) as json_file:
-                    stock_data = json.load(json_file)
+                stock_data = read_pickle(file_path)
             elif not os.path.exists(os.path.dirname(file_path)):
                 os.makedirs(os.path.dirname(file_path))
 
         # Determine if cache is missing any keys
-        if stock_data == {}:
-            missing_keys = keys.copy()
-        else:
-            missing_keys = []
-            for key in keys:
-                idx = start_date
-                while idx <= end_date:
-                    idx += timedelta(days=1)
-                    if idx in stock_data:
-                        if key not in stock_data[idx]:
-                            missing_keys.append(key)
-                            break
-                    else:
-                        missing_keys.append(key)
-                        break
+        missing_keys = None
+        idx = start_date
+        delta = timedelta(days=1)
+        while idx <= end_date:
+            if str(idx) in stock_data.index:
+                missing_keys = keys
+                break
+            idx += delta
+        if missing_keys is None:
+            missing_keys = stock_data.columns[stock_data.isna().any()].tolist()
 
         # Run get method on each plugin
-        for plugin in self.plugins:
-            try:
-                update_dict(stock_data, plugin.get(missing_keys, start_date, end_date, exchange, symbol, extension))
-            except Exception as e:
-                print(e)
+        if missing_keys is not None:
+            for plugin in self.plugins:
+                new_data = None
+                try:
+                    new_data = plugin.get(missing_keys, start_date, end_date, exchange, symbol, extension)
+                except Exception as e:
+                    print(e)
+                if new_data is not None:
+                    stock_data = stock_data.combine_first(new_data)
 
         # Store data in cache
         if file_path:
-            with open(file_path, 'w+') as json_file:
-                json.dump(stock_data, json_file, indent=4, sort_keys=True)
+            stock_data.to_pickle(file_path)
 
         # Drop any cached keys that weren't requested
-        if len(keys) > 0:
-            for idx in stock_data:
-                drop_keys = set(keys) - set(stock_data[idx])
-                for drop_key in drop_keys:
-                    del stock_data[idx][drop_key]
+        drop_keys = set(stock_data.columns.values) - set(keys)
+        stock_data = stock_data.drop(columns=drop_keys)
 
         return stock_data

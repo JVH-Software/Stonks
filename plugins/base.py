@@ -1,5 +1,9 @@
+from typing import Optional
+
 import yfinance as yf
 from datetime import date, timedelta
+
+from pandas import DataFrame
 
 from plugin import Plugin
 
@@ -27,11 +31,11 @@ class YahooFinancePlugin(Plugin):
     available_keys = {"Open", "High", "Low", "Close", "Volume", "Dividends", "Stock Splits"}
 
     def get(self, keys: list, start_date: date, end_date: date, exchange: str, symbol: str,
-            extension: str = None) -> dict:
+            extension: str = None) -> Optional[DataFrame]:
 
         # Return nothing if no specified keys apply to this plugin
-        if len(keys) > 0 and not self.available_keys.intersection(set(keys)):
-            return {}
+        if not self.available_keys.intersection(set(keys)):
+            return None
 
         # Get data from Yahoo Finance through yfinance
         stock = yf.Ticker(symbol)
@@ -44,9 +48,7 @@ class YahooFinancePlugin(Plugin):
         dataframe.index = idx_list
 
         # Drop any columns that were not specified in the request
-        if len(keys) > 0:
-            drop_labels = (set(keys) ^ self.available_keys) & self.available_keys
-            dataframe = dataframe.drop(columns=drop_labels)
+        drop_labels = (set(keys) ^ self.available_keys) & self.available_keys
+        dataframe = dataframe.drop(columns=drop_labels)
 
-        # Convert to expected dictionary format
-        return dataframe.T.to_dict()
+        return dataframe

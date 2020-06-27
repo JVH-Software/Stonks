@@ -1,6 +1,9 @@
 from abc import abstractmethod, ABC
 from datetime import date
 from functools import total_ordering
+from typing import Optional
+
+from pandas import DataFrame
 
 
 @total_ordering
@@ -19,18 +22,17 @@ class Plugin(ABC):
 
     @abstractmethod
     def get(self, keys: list, start_date: date, end_date: date, exchange: str, symbol: str,
-            extension: str = None) -> dict:
+            extension: str = None) -> Optional[DataFrame]:
         """
         Args:
-            keys: The kind of data requested. Plugin should ignore any unexpected keys. If empty, plugin should assume
-            all keys are valid. Ex: ["close", "open", "volume"]
+            keys: The kind of data requested. Plugin should ignore any unexpected keys. Ex: ["close", "open", "volume"]
             start_date: The starting date of the requested data. Inclusive. start_date <= end_date
             end_date: The ending date of the requested data. Inclusive. end_date => start_date
             exchange: The stock exchange symbol. Ex: "NYSE" from "NYSE:BRK.A".
             symbol: The stock symbol. Ex: "BRK" from "NYSE:BRK.A".
             extension: Optional. The behind-the-dot extension. Ex: "A" from "NYSE:BRK.A". Defaults to None.
         Returns:
-            A nested dictionary containing the requested data in the form {"YYYY-MM-DD": {"KEY": "VALUE"}}.
+            A DataFrame with a date index and keys as the column labels.
         """
 
     def __eq__(self, other):
