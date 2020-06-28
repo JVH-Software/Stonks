@@ -13,4 +13,3 @@ A python package for accessing historical stock data. This library was designed 
 * Stock Splits
 
 ## Future Work
-* Store cache in a database

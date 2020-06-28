@@ -92,11 +92,13 @@ class Stonks:
         missing_keys = None
         idx = start_date
         delta = timedelta(days=1)
+        # Check for missing dates (all keys missing)
         while idx <= end_date:
-            if str(idx) in stock_data.index:
+            if str(idx) not in stock_data.index:
                 missing_keys = keys
                 break
             idx += delta
+        # Check for null values in the columns
         if missing_keys is None:
             missing_keys = stock_data.columns[stock_data.isna().any()].tolist()
 
