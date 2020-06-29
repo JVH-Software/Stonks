@@ -36,13 +36,13 @@ class Plugin(ABC):
         """
 
     def __eq__(self, other):
-        if issubclass(other, Plugin):
+        if issubclass(other.__class__, Plugin):
             return self.priority == other.priority
         else:
             raise TypeError(f"Expected type: Plugin. Found: {type(other)}")
 
     def __lt__(self, other):
-        if issubclass(other, Plugin):
+        if issubclass(other.__class__, Plugin):
             return self.priority < other.priority
         else:
             raise TypeError(f"Expected type: Plugin. Found: {type(other)}")
