@@ -18,16 +18,6 @@ A python package for accessing historical stock data. This library was designed 
 
 `Stock Splits` Stock splits.
 
-`Open Change` Relative change in Open value from previous day.
-
-`High Change` Relative change in High value from previous day.
-
-`Low Change` Relative change in Low value from previous day.
-
-`Close Change` Relative change in Close value from previous day.
-
-`Volume Change` Relative change in Volume value from previous day.
-
 `Monthly Relative Interest` Google Trends Interest value relative to the past 30 days.
 
 `Annual Relative Interest` Google Trends Interest value relative to the past 365 days.

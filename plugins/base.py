@@ -1,3 +1,4 @@
+import math
 from typing import Optional
 
 import dateutil
@@ -28,20 +29,9 @@ class YahooFinancePlugin(Plugin):
         Dividends: Dividends paid
 
         Stock Splits: Stock splits
-
-        Open Change: Relative change in Open value from previous day
-
-        High Change: Relative change in High value from previous day
-
-        Low Change: Relative change in Low value from previous day
-
-        Close Change: Relative change in Close value from previous day
-
-        Volume Change: Relative change in Volume value from previous day
     """
 
-    available_keys = {"Open", "High", "Low", "Close", "Volume", "Dividends", "Stock Splits",
-                      "Open Change", "High Change", "Low Change", "Close Change", "Volume Change"}
+    available_keys = {"Open", "High", "Low", "Close", "Volume", "Dividends", "Stock Splits"}
 
     def get(self, keys: list, start_date: date, end_date: date, exchange: str, symbol: str,
             extension: str = None) -> Optional[DataFrame]:
@@ -49,83 +39,9 @@ class YahooFinancePlugin(Plugin):
         if not self.available_keys.intersection(set(keys)):
             return None
 
-        # Require base value column if change column requested
-        open_change = False
-        high_change = False
-        low_change = False
-        close_change = False
-        volume_change = False
-        if "Open Change" in keys:
-            open_change = True
-            if "Open" not in keys:
-                keys.append("Open")
-        if "High Change" in keys and "High" not in keys:
-            high_change = True
-            if "High" not in keys:
-                keys.append("High")
-        if "Low Change" in keys and "Low" not in keys:
-            low_change = True
-            if "Low" not in keys:
-                keys.append("Low")
-        if "Close Change" in keys and "Close" not in keys:
-            close_change = True
-            if "Close" not in keys:
-                keys.append("Close")
-        if "Volume Change" in keys and "Volume" not in keys:
-            volume_change = True
-            if "Volume" not in keys:
-                keys.append("Volume")
-
         # Get data from Yahoo Finance through yfinance
         stock = yf.Ticker(symbol)
-        dataframe = stock.history(start=start_date - timedelta(days=1), end=end_date + timedelta(days=1))
-
-        delta = timedelta(days=1)
-        if open_change or high_change or low_change or close_change or volume_change:
-            idx = start_date
-            while idx <= end_date:
-                if open_change:
-                    try:
-                        prev_value = dataframe.at[idx-delta, "Open"]
-                        value = dataframe.at[idx, "Open"]
-                        d = DataFrame(index=[idx], data={"Open Change": [value / prev_value]})
-                        dataframe = dataframe.combine_first(d)
-                    except KeyError:
-                        pass
-                if high_change:
-                    try:
-                        prev_value = dataframe.at[idx-delta, "High"]
-                        value = dataframe.at[idx, "High"]
-                        d = DataFrame(index=[idx], data={"High Change": [value / prev_value]})
-                        dataframe = dataframe.combine_first(d)
-                    except KeyError:
-                        pass
-                if low_change:
-                    try:
-                        prev_value = dataframe.at[idx-delta, "Low"]
-                        value = dataframe.at[idx, "Low"]
-                        d = DataFrame(index=[idx], data={"Low Change": [value / prev_value]})
-                        dataframe = dataframe.combine_first(d)
-                    except KeyError:
-                        pass
-                if close_change:
-                    try:
-                        prev_value = dataframe.at[idx-delta, "Close"]
-                        value = dataframe.at[idx, "Close"]
-                        d = DataFrame(index=[idx], data={"Close Change": [value / prev_value]})
-                        dataframe = dataframe.combine_first(d)
-                    except KeyError:
-                        pass
-                if volume_change:
-                    try:
-                        prev_value = dataframe.at[idx-delta, "Volume"]
-                        value = dataframe.at[idx, "Volume"]
-                        d = DataFrame(index=[idx], data={"Volume Change": [value / prev_value]})
-                        dataframe = dataframe.combine_first(d)
-                    except KeyError:
-                        pass
-
-                idx += delta
+        dataframe = stock.history(start=start_date, end=end_date + timedelta(days=1))
 
         return dataframe
 
