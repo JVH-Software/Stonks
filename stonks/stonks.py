@@ -1,14 +1,12 @@
 import collections
-import json
 import os
 from datetime import date, timedelta
 from typing import Union, Optional
 
 import numpy
-from pandas import read_pickle, DataFrame, date_range
+from pandas import read_pickle, DataFrame
 
-from plugin import Plugin
-from plugins import *  # This is required to load all plugins dynamically
+from stonks.plugin import Plugin
 
 
 def update_dict(d, u):

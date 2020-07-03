@@ -28,4 +28,20 @@ A python package for accessing historical stock data. This library was designed 
 `Annual Relative Interest To S&P` Google Trends Interest value relative to "S&P" Interest value within the past
 365 days.
 
-## Future Work
+`Shares` Number of shares outstanding.
+
+`EPS` Earnings per share.
+
+`D/E` Debt / equity ratio.
+
+`FCFPS` Free cash flow per share.
+
+`Current Ratio` Current ratio.
+
+`Quick Ratio` Quick ratio.
+
+`ROE` Return on equity.
+
+`ROA` Return on assets.
+
+`ROI` Return on investments.

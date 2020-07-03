@@ -1,9 +1,6 @@
-import math
-import re
 from typing import Optional
 
 from bs4 import BeautifulSoup
-import dateutil
 import requests
 import yfinance as yf
 from pytrends.request import TrendReq
@@ -11,7 +8,7 @@ from datetime import date, timedelta, datetime
 
 from pandas import DataFrame
 
-from plugin import Plugin
+from stonks.plugin import Plugin
 
 
 class YahooFinancePlugin(Plugin):
