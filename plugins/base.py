@@ -180,63 +180,63 @@ class MacrotrendsPlugin(Plugin):
             if response:
                 soup = BeautifulSoup(response.text, "lxml")
                 table = soup.findAll("table", class_="historical_data_table table")[1]
-                dataframe.combine_first(self._convert_table_to_dataframe(table, "Shares"))
+                dataframe = dataframe.combine_first(self._convert_table_to_dataframe(table, "Shares"))
 
         if "EPS" in keys:
             response = requests.get(url + "eps-earnings-per-share-diluted")
             if response:
                 soup = BeautifulSoup(response.text, "lxml")
                 table = soup.findAll("table", class_="historical_data_table table")[1]
-                dataframe.combine_first(self._convert_table_to_dataframe(table, "EPS"))
+                dataframe = dataframe.combine_first(self._convert_table_to_dataframe(table, "EPS"))
 
         if "D/E" in keys:
             response = requests.get(url + "debt-equity-ratio")
             if response:
                 soup = BeautifulSoup(response.text, "lxml")
                 table = soup.findAll("table")[0]
-                dataframe.combine_first(self._convert_table_to_dataframe(table, "D/E", 3))
+                dataframe = dataframe.combine_first(self._convert_table_to_dataframe(table, "D/E", 3))
 
         if "FCFPS" in keys:
             response = requests.get(url + "price-fcf")
             if response:
                 soup = BeautifulSoup(response.text, "lxml")
                 table = soup.findAll("table")[0]
-                dataframe.combine_first(self._convert_table_to_dataframe(table, "FCFPS", 2))
+                dataframe = dataframe.combine_first(self._convert_table_to_dataframe(table, "FCFPS", 2))
 
         if "Current Ratio" in keys:
             response = requests.get(url + "current-ratio")
             if response:
                 soup = BeautifulSoup(response.text, "lxml")
                 table = soup.findAll("table")[0]
-                dataframe.combine_first(self._convert_table_to_dataframe(table, "Current Ratio", 3))
+                dataframe = dataframe.combine_first(self._convert_table_to_dataframe(table, "Current Ratio", 3))
 
         if "Quick Ratio" in keys:
             response = requests.get(url + "quick-ratio")
             if response:
                 soup = BeautifulSoup(response.text, "lxml")
                 table = soup.findAll("table")[0]
-                dataframe.combine_first(self._convert_table_to_dataframe(table, "Quick Ratio", 3))
+                dataframe = dataframe.combine_first(self._convert_table_to_dataframe(table, "Quick Ratio", 3))
 
         if "ROE" in keys:
             response = requests.get(url + "roe")
             if response:
                 soup = BeautifulSoup(response.text, "lxml")
                 table = soup.findAll("table")[0]
-                dataframe.combine_first(self._convert_table_to_dataframe(table, "ROE", 3))
+                dataframe = dataframe.combine_first(self._convert_table_to_dataframe(table, "ROE", 3))
 
         if "ROA" in keys:
             response = requests.get(url + "roa")
             if response:
                 soup = BeautifulSoup(response.text, "lxml")
                 table = soup.findAll("table")[0]
-                dataframe.combine_first(self._convert_table_to_dataframe(table, "ROA", 3))
+                dataframe = dataframe.combine_first(self._convert_table_to_dataframe(table, "ROA", 3))
 
         if "ROI" in keys:
             response = requests.get(url + "roi")
             if response:
                 soup = BeautifulSoup(response.text, "lxml")
                 table = soup.findAll("table")[0]
-                dataframe.combine_first(self._convert_table_to_dataframe(table, "ROI", 3))
+                dataframe = dataframe.combine_first(self._convert_table_to_dataframe(table, "ROI", 3))
 
         return dataframe
 
@@ -247,10 +247,17 @@ class MacrotrendsPlugin(Plugin):
         for row in table.tbody.find_all("tr"):
             cells = row.find_all("td")
             if cells is not None:
-                index.append(datetime.strptime(cells[0].text, "%Y-%m-%d").date())
+
                 cell_str = cells[cell_idx].text
-                cell_float = float(cell_str.replace("$", "").strip())
+                try:
+                    cell_float = float(cell_str.replace("$", "").replace("%", "").strip())
+                except ValueError:
+                    print(f"Failed to convert {cell_str} to float from {cells}.")
+                    continue
+
+                index.append(datetime.strptime(cells[0].text, "%Y-%m-%d").date())
                 if "%" in cell_str:
                     cell_float = cell_float / 100
                 data[column_name].append(cell_float)
+
         return DataFrame(index=index, data=data)

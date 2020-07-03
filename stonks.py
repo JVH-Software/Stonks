@@ -119,6 +119,7 @@ class Stonks:
         if missing_keys is not None:
             print(f"Missing keys: {missing_keys}")
             for plugin in self.plugins:
+                print(f"Executing plugin {plugin.__class__.__name__}")
                 new_data = None
                 try:
                     new_data = plugin.get(missing_keys, start_date, end_date, exchange, symbol, extension)
