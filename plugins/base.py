@@ -1,10 +1,13 @@
 import math
+import re
 from typing import Optional
 
+from bs4 import BeautifulSoup
 import dateutil
+import requests
 import yfinance as yf
 from pytrends.request import TrendReq
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime
 
 from pandas import DataFrame
 
@@ -129,3 +132,125 @@ class GoogleTrendsPlugin(Plugin):
                 idx += day_delta
 
         return dataframe
+
+
+class MacrotrendsPlugin(Plugin):
+    """
+    Stonks plugin for Macrotrends historical finance data.
+
+    Keys:
+        Shares: Number of shares outstanding
+
+        EPS: Earnings per share.
+
+        D/E: Debt / equity ratio
+
+        FCFPS: Free cash flow per share
+
+        Current Ratio: Current ratio
+
+        Quick Ratio: Quick ratio
+
+        ROE: Return on equity
+
+        ROA: Return on assets
+
+        ROI: Return on investments
+
+    """
+
+    available_keys = {"Shares", "EPS", "D/E", "FCFPS", "Current Ratio", "Quick Ratio", "ROE", "ROA", "ROI"}
+
+    def get(self, keys: list, start_date: date, end_date: date, exchange: str, symbol: str,
+            extension: str = None) -> Optional[DataFrame]:
+        # Return nothing if no specified keys apply to this plugin
+        if not self.available_keys.intersection(set(keys)):
+            return None
+
+        # Get URL
+        url = f"https://www.macrotrends.net/stocks/charts/{symbol}/"
+        response = requests.get(url, allow_redirects=False)
+        if response.status_code == 301:
+            url = response.headers["Location"]
+
+        dataframe = DataFrame()
+
+        if "Shares" in keys:
+            response = requests.get(url + "shares-outstanding")
+            if response:
+                soup = BeautifulSoup(response.text, "lxml")
+                table = soup.findAll("table", class_="historical_data_table table")[1]
+                dataframe.combine_first(self._convert_table_to_dataframe(table, "Shares"))
+
+        if "EPS" in keys:
+            response = requests.get(url + "eps-earnings-per-share-diluted")
+            if response:
+                soup = BeautifulSoup(response.text, "lxml")
+                table = soup.findAll("table", class_="historical_data_table table")[1]
+                dataframe.combine_first(self._convert_table_to_dataframe(table, "EPS"))
+
+        if "D/E" in keys:
+            response = requests.get(url + "debt-equity-ratio")
+            if response:
+                soup = BeautifulSoup(response.text, "lxml")
+                table = soup.findAll("table")[0]
+                dataframe.combine_first(self._convert_table_to_dataframe(table, "D/E", 3))
+
+        if "FCFPS" in keys:
+            response = requests.get(url + "price-fcf")
+            if response:
+                soup = BeautifulSoup(response.text, "lxml")
+                table = soup.findAll("table")[0]
+                dataframe.combine_first(self._convert_table_to_dataframe(table, "FCFPS", 2))
+
+        if "Current Ratio" in keys:
+            response = requests.get(url + "current-ratio")
+            if response:
+                soup = BeautifulSoup(response.text, "lxml")
+                table = soup.findAll("table")[0]
+                dataframe.combine_first(self._convert_table_to_dataframe(table, "Current Ratio", 3))
+
+        if "Quick Ratio" in keys:
+            response = requests.get(url + "quick-ratio")
+            if response:
+                soup = BeautifulSoup(response.text, "lxml")
+                table = soup.findAll("table")[0]
+                dataframe.combine_first(self._convert_table_to_dataframe(table, "Quick Ratio", 3))
+
+        if "ROE" in keys:
+            response = requests.get(url + "roe")
+            if response:
+                soup = BeautifulSoup(response.text, "lxml")
+                table = soup.findAll("table")[0]
+                dataframe.combine_first(self._convert_table_to_dataframe(table, "ROE", 3))
+
+        if "ROA" in keys:
+            response = requests.get(url + "roa")
+            if response:
+                soup = BeautifulSoup(response.text, "lxml")
+                table = soup.findAll("table")[0]
+                dataframe.combine_first(self._convert_table_to_dataframe(table, "ROA", 3))
+
+        if "ROI" in keys:
+            response = requests.get(url + "roi")
+            if response:
+                soup = BeautifulSoup(response.text, "lxml")
+                table = soup.findAll("table")[0]
+                dataframe.combine_first(self._convert_table_to_dataframe(table, "ROI", 3))
+
+        return dataframe
+
+    @staticmethod
+    def _convert_table_to_dataframe(table, column_name: str, cell_idx: int = 1) -> DataFrame:
+        data = {column_name: []}
+        index = []
+        for row in table.tbody.find_all("tr"):
+            cells = row.find_all("td")
+            if cells is not None:
+                index.append(datetime.strptime(cells[0].text, "%Y-%m-%d").date())
+                cell_str = cells[cell_idx].text
+                cell_float = float(cell_str.replace("$", "").strip())
+                if "%" in cell_str:
+                    cell_float = cell_float / 100
+                data[column_name].append(cell_float)
+        return DataFrame(index=index, data=data)
